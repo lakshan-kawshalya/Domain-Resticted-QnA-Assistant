@@ -39,6 +39,7 @@ WHAT YOU IMPLEMENT:
 
 import pandas as pd
 import streamlit as st
+from openai import OpenAI
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 # ==============================================================================
@@ -259,7 +260,21 @@ def get_ai_response(prompt: str) -> str:
         The AI's response text, or an error message if the call fails.
     """
     # STUDENT CODE HERE
-    pass
+    api_key: str = st.session_state.get("openai_api_key")
+
+    try:
+        client: OpenAI = OpenAI(api_key)
+
+        response = client.chat.completions.create(
+            model=" gpt -4 o - mini ",
+            messages=[{" role ": " user ", " content ": prompt}],
+            max_tokens=1024,
+        )
+
+        return response
+
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 
 # ==============================================================================
