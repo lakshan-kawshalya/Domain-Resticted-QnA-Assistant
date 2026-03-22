@@ -263,11 +263,11 @@ def get_ai_response(prompt: str) -> str:
     api_key: str = st.session_state.get("openai_api_key")
 
     try:
-        client: OpenAI = OpenAI(api_key)
+        client: OpenAI = OpenAI(api_key=api_key)
 
         response = client.chat.completions.create(
-            model=" gpt -4 o - mini ",
-            messages=[{" role ": " user ", " content ": prompt}],
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
             max_tokens=1024,
         )
 
@@ -308,7 +308,35 @@ def render_setup_tab() -> None:
     - Store filename in st.session_state.uploaded_filename
     """
     # STUDENT CODE HERE
-    pass
+    st.header("Setup")
+    domain: str = st.radio("Domains: ", AVAILABLE_DOMAINS, key="domain_radio")
+
+    if domain != st.session_state.selected_domain:
+        st.session_state.selected_domain = domain
+
+    st.markdown("---")
+
+    uploadedFile = st.file_uploader(
+        "Upload Knowledge Base...", type=["csv"], key="kb_uploader"
+    )
+
+    if uploadedFile is not None:
+        st.success(f"File uploaded successfully: {uploadedFile.name}")
+
+        st.session_state.uploaded_filename = uploadedFile.name
+
+        result = load_knowledge_base(uploadedFile)
+
+        if result.startswith("Error:"):
+            st.error(result)
+        else:
+            st.session_state.knowledge_base = result
+            st.info("Knowledge Base loaded into memory.")
+            with st.expander("View Formatted Content"):
+                st.text(result)
+
+    else:
+        st.info("No file uploaded yet.")
 
 
 def render_chat_tab() -> None:
@@ -335,7 +363,46 @@ def render_chat_tab() -> None:
     - Only store the LAST question and answer (no history)
     """
     # STUDENT CODE HERE
-    pass
+    render_setup_status()
+
+    if not is_setup_complete():
+        return
+
+    chat_question: str = st.text_input(
+        f"Ask anything about {st.session_state.selected_domain}...", key="chat_question"
+    )
+
+    with st.expander("Response style options"):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            tone: str = st.selectbox("Select Tone", TONE_OPTIONS, key="tone_selector")
+        with col2:
+            length: str = st.selectbox(
+                "Select Length", LENGTH_OPTIONS, key="length_selector"
+            )
+        with col3:
+            audience: str = st.selectbox(
+                "Select Audience", AUDIENCE_OPTIONS, key="audience_selector"
+            )
+
+    with st.spinner("Crafting the answer..."):
+        if st.button("Get Answer", type="primary", key="answer_btn"):
+            if chat_question.strip() == "":
+                st.info("Please ask a question first.")
+                return
+
+            domain = st.session_state.selected_domain
+            kb = st.session_state.knowledge_base
+
+            prompt: str = build_prompt(
+                domain, kb, tone, length, audience, chat_question
+            )
+
+            response: list[str] = get_ai_response(prompt)
+
+            st.session_state.answer = response
+
+            st.write(st.session_state.answer.choices[0].message.content)
 
 
 def render_quick_questions_tab() -> None:
