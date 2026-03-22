@@ -434,7 +434,20 @@ def render_quick_questions_tab() -> None:
     - Use a loop to generate buttons dynamically
     """
     # STUDENT CODE HERE
-    pass
+    render_setup_status()
+
+    if not is_setup_complete():
+        return
+
+    st.caption("Click a question, then go to chat.")
+
+    questsions: list[str] = PREBUILT_QUESTIONS.get(st.session_state.selected_domain, [])
+
+    def select_question(q: str) -> None:
+        st.session_state.chat_question = q
+
+    for q in questsions:
+        st.button(q, on_click=select_question, args=(q,))
 
 
 # ==============================================================================
