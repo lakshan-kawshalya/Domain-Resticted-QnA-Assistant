@@ -400,7 +400,8 @@ def render_chat_tab() -> None:
 
             response: list[str] = get_ai_response(prompt)
 
-            st.session_state.answer = response
+            st.session_state.last_question = chat_question
+            st.session_state.last_answer = response
 
             st.write(st.session_state.answer.choices[0].message.content)
 
